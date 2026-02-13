@@ -141,31 +141,35 @@ export default function DashboardMenus() {
 
   const handleAiGenerate = async () => {
     if (!aiCuisine) return;
-    const result = await generateMenu.mutateAsync({
-      restaurantId: restaurant.id,
-      cuisine: aiCuisine,
-      tone: aiTone
-    });
-    
-    const menu = await createMenu.mutateAsync({
-      restaurantId: restaurant.id,
-      name: result.name,
-      description: result.description,
-      isActive: true
-    });
-
-    for (const item of result.items) {
-      await createItem.mutateAsync({
-        ...item,
-        menuId: menu.id,
-        isBestseller: item.isBestseller || false,
-        isChefsPick: item.isChefsPick || false,
-        isTodaysSpecial: item.isTodaysSpecial || false,
+    try {
+      const result = await generateMenu.mutateAsync({
+        restaurantId: restaurant.id,
+        cuisine: aiCuisine,
+        tone: aiTone
       });
+      
+      const menu = await createMenu.mutateAsync({
+        restaurantId: restaurant.id,
+        name: result.name,
+        description: result.description,
+        isActive: true
+      });
+
+      for (const item of result.items) {
+        await createItem.mutateAsync({
+          ...item,
+          menuId: menu.id,
+          isBestseller: item.isBestseller || false,
+          isChefsPick: item.isChefsPick || false,
+          isTodaysSpecial: item.isTodaysSpecial || false,
+        });
+      }
+      
+      setIsAiOpen(false);
+      toast({ title: "Magic Complete!", description: "Your AI menu has been generated." });
+    } catch (err) {
+      // Error toast is handled by the hook's onError
     }
-    
-    setIsAiOpen(false);
-    toast({ title: "Magic Complete!", description: "Your AI menu has been generated." });
   };
 
   const handleFileUpload = async () => {

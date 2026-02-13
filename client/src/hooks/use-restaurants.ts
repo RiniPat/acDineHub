@@ -139,7 +139,10 @@ export function useGenerateMenu() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error("Failed to generate menu");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: "Failed to generate menu" }));
+        throw new Error(err.message);
+      }
       return api.menus.generate.responses[200].parse(await res.json());
     },
     onError: (error) => {

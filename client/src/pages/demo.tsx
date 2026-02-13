@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,32 +7,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useRestaurantBySlug, useMenus, useUpdateMenuItem, useDeleteMenuItem } from "@/hooks/use-restaurants";
 import { QRCodeSVG } from "qrcode.react";
 import {
   LayoutDashboard, Menu as MenuIcon, QrCode, UtensilsCrossed,
-  Pencil, Trash2, Eye, EyeOff, Plus, Download, ExternalLink,
-  Flame, ChefHat, Star, Loader2, ArrowLeft, Sparkles,
+  Pencil, Trash2, Eye, EyeOff, Download, ExternalLink,
+  Loader2, ArrowLeft, Sparkles,
   Image as ImageIcon, CheckCircle2, Info,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
-// ─── Demo Data ───
-const initialItems = [
-  { id: 1, name: "Truffle Hummus", description: "Creamy chickpea hummus drizzled with truffle oil, served with warm pita.", price: "38.00", category: "Appetizer", imageUrl: "https://images.unsplash.com/photo-1637361973-e2ef1e177713?w=400&h=300&fit=crop", isAvailable: true, isBestseller: true, isChefsPick: false, isTodaysSpecial: false },
-  { id: 2, name: "Grilled Halloumi Salad", description: "Crispy halloumi over mixed greens with pomegranate and za'atar dressing.", price: "45.00", category: "Appetizer", imageUrl: "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&h=300&fit=crop", isAvailable: true, isBestseller: false, isChefsPick: true, isTodaysSpecial: false },
-  { id: 3, name: "Lamb Kibbeh", description: "Crispy fried lamb and bulgur croquettes with yogurt mint dip.", price: "42.00", category: "Appetizer", imageUrl: "https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=300&fit=crop", isAvailable: true, isBestseller: false, isChefsPick: false, isTodaysSpecial: false },
-  { id: 4, name: "Seafood Risotto", description: "Arborio rice with prawns, calamari, and saffron broth. Finished with parmesan.", price: "95.00", category: "Main", imageUrl: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=400&h=300&fit=crop", isAvailable: true, isBestseller: true, isChefsPick: false, isTodaysSpecial: false },
-  { id: 5, name: "Grilled Lamb Chops", description: "New Zealand lamb chops with rosemary jus, roasted vegetables, and mashed potato.", price: "120.00", category: "Main", imageUrl: "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=400&h=300&fit=crop", isAvailable: true, isBestseller: false, isChefsPick: true, isTodaysSpecial: false },
-  { id: 6, name: "Pan-Seared Salmon", description: "Atlantic salmon with lemon butter sauce, asparagus, and quinoa pilaf.", price: "98.00", category: "Main", imageUrl: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop", isAvailable: true, isBestseller: false, isChefsPick: false, isTodaysSpecial: false },
-  { id: 7, name: "Chicken Shawarma Plate", description: "Marinated chicken with garlic sauce, pickles, fries, and fresh tabouleh.", price: "65.00", category: "Main", imageUrl: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=400&h=300&fit=crop", isAvailable: true, isBestseller: false, isChefsPick: false, isTodaysSpecial: true },
-  { id: 8, name: "Truffle Mushroom Pasta", description: "Fresh pappardelle with wild mushroom ragout and shaved black truffle.", price: "85.00", category: "Main", imageUrl: "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400&h=300&fit=crop", isAvailable: false, isBestseller: false, isChefsPick: false, isTodaysSpecial: false },
-  { id: 9, name: "Kunafa Cheesecake", description: "Fusion dessert blending crispy kunafa with creamy New York cheesecake.", price: "42.00", category: "Dessert", imageUrl: "https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&h=300&fit=crop", isAvailable: true, isBestseller: true, isChefsPick: false, isTodaysSpecial: false },
-  { id: 10, name: "Chocolate Lava Cake", description: "Warm chocolate fondant with vanilla bean ice cream and berry coulis.", price: "48.00", category: "Dessert", imageUrl: "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=400&h=300&fit=crop", isAvailable: true, isBestseller: false, isChefsPick: true, isTodaysSpecial: false },
-  { id: 11, name: "Fresh Mint Lemonade", description: "House-made lemonade with fresh mint leaves and a hint of rose water.", price: "22.00", category: "Drink", imageUrl: "https://images.unsplash.com/photo-1556881286-fc6915169721?w=400&h=300&fit=crop", isAvailable: true, isBestseller: false, isChefsPick: false, isTodaysSpecial: false },
-  { id: 12, name: "Mango Lassi", description: "Chilled yogurt smoothie with Alphonso mango and a touch of cardamom.", price: "25.00", category: "Drink", imageUrl: "https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=400&h=300&fit=crop", isAvailable: true, isBestseller: false, isChefsPick: false, isTodaysSpecial: true },
-];
-
-type DemoItem = typeof initialItems[0];
 
 // ─── Demo Layout Shell ───
 function DemoLayout({ children, activeTab, setActiveTab }: { children: React.ReactNode; activeTab: string; setActiveTab: (t: string) => void }) {
@@ -140,10 +123,10 @@ function DemoLayout({ children, activeTab, setActiveTab }: { children: React.Rea
 }
 
 // ─── Overview Tab ───
-function OverviewTab({ items, setActiveTab }: { items: DemoItem[]; setActiveTab: (t: string) => void }) {
-  const liveItems = items.filter(i => i.isAvailable).length;
-  const hiddenItems = items.filter(i => !i.isAvailable).length;
-  const categories = [...new Set(items.map(i => i.category))].length;
+function OverviewTab({ items, setActiveTab }: { items: any[]; setActiveTab: (t: string) => void }) {
+  const liveItems = items.filter(i => i.isAvailable !== false).length;
+  const hiddenItems = items.filter(i => i.isAvailable === false).length;
+  const categories = Array.from(new Set(items.map(i => i.category))).length;
 
   return (
     <div>
@@ -215,10 +198,13 @@ function OverviewTab({ items, setActiveTab }: { items: DemoItem[]; setActiveTab:
   );
 }
 
-// ─── Menu Tab ───
-function MenuTab({ items, setItems }: { items: DemoItem[]; setItems: (i: DemoItem[]) => void }) {
+// ─── Menu Tab (Real API) ───
+function MenuTab({ items, menuId }: { items: any[]; menuId: number }) {
   const { toast } = useToast();
-  const [editItem, setEditItem] = useState<DemoItem | null>(null);
+  const updateItem = useUpdateMenuItem();
+  const deleteItemMutation = useDeleteMenuItem();
+
+  const [editItem, setEditItem] = useState<any>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
@@ -229,57 +215,79 @@ function MenuTab({ items, setItems }: { items: DemoItem[]; setItems: (i: DemoIte
   const [editChefsPick, setEditChefsPick] = useState(false);
   const [editTodaysSpecial, setEditTodaysSpecial] = useState(false);
 
-  const openEdit = (item: DemoItem) => {
+  const openEdit = (item: any) => {
     setEditItem(item);
     setEditName(item.name);
-    setEditDesc(item.description);
-    setEditPrice(item.price);
-    setEditCategory(item.category);
-    setEditImage(item.imageUrl);
-    setEditBestseller(item.isBestseller);
-    setEditChefsPick(item.isChefsPick);
-    setEditTodaysSpecial(item.isTodaysSpecial);
+    setEditDesc(item.description || "");
+    setEditPrice(item.price?.replace(/[^0-9.]/g, "") || "");
+    setEditCategory(item.category || "");
+    setEditImage(item.imageUrl || "");
+    setEditBestseller(!!item.isBestseller);
+    setEditChefsPick(!!item.isChefsPick);
+    setEditTodaysSpecial(!!item.isTodaysSpecial);
     setIsEditOpen(true);
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editItem) return;
-    setItems(items.map(i => i.id === editItem.id ? {
-      ...i, name: editName, description: editDesc, price: editPrice, category: editCategory,
-      imageUrl: editImage, isBestseller: editBestseller, isChefsPick: editChefsPick, isTodaysSpecial: editTodaysSpecial,
-    } : i));
-    setIsEditOpen(false);
-    toast({ title: "Item Updated", description: `"${editName}" saved successfully.` });
+    try {
+      await updateItem.mutateAsync({
+        id: editItem.id,
+        menuId: menuId,
+        name: editName,
+        description: editDesc,
+        price: editPrice,
+        category: editCategory,
+        imageUrl: editImage,
+        isBestseller: editBestseller,
+        isChefsPick: editChefsPick,
+        isTodaysSpecial: editTodaysSpecial,
+      });
+      setIsEditOpen(false);
+      toast({ title: "Item Updated", description: `"${editName}" saved successfully.` });
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to update item.", variant: "destructive" });
+    }
   };
 
-  const toggleAvail = (id: number) => {
-    const item = items.find(i => i.id === id)!;
-    setItems(items.map(i => i.id === id ? { ...i, isAvailable: !i.isAvailable } : i));
-    toast({
-      title: item.isAvailable ? "Item Hidden" : "Item Live",
-      description: item.isAvailable ? `"${item.name}" hidden from customers.` : `"${item.name}" is now visible.`,
-    });
+  const toggleAvail = async (item: any) => {
+    try {
+      await updateItem.mutateAsync({
+        id: item.id,
+        menuId: menuId,
+        isAvailable: !item.isAvailable,
+      });
+      toast({
+        title: item.isAvailable ? "Item Hidden" : "Item Live",
+        description: item.isAvailable ? `"${item.name}" hidden from customers.` : `"${item.name}" is now visible.`,
+      });
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to update availability.", variant: "destructive" });
+    }
   };
 
-  const deleteItem = (id: number) => {
-    const item = items.find(i => i.id === id)!;
-    setItems(items.filter(i => i.id !== id));
-    toast({ title: "Item Deleted", description: `"${item.name}" removed from menu.` });
+  const handleDelete = async (item: any) => {
+    if (!confirm(`Delete "${item.name}"?`)) return;
+    try {
+      await deleteItemMutation.mutateAsync({ id: item.id, menuId: menuId });
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to delete item.", variant: "destructive" });
+    }
   };
 
-  const grouped = items.reduce((acc, item) => {
+  const grouped = items.reduce((acc: Record<string, any[]>, item: any) => {
     const cat = item.category || "Other";
     if (!acc[cat]) acc[cat] = [];
     acc[cat].push(item);
     return acc;
-  }, {} as Record<string, DemoItem[]>);
+  }, {} as Record<string, any[]>);
 
   return (
     <div>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="font-display text-3xl font-bold text-gray-900">Signature Menu</h1>
-          <p className="text-gray-500 mt-1">{items.length} items · {items.filter(i => i.isAvailable).length} live · Try editing, toggling, and deleting!</p>
+          <p className="text-gray-500 mt-1">{items.length} items · {items.filter((i: any) => i.isAvailable !== false).length} live · Try editing, toggling, and deleting!</p>
         </div>
         <a href="/menu/demo-bistro" target="_blank">
           <Button variant="outline" className="gap-2">
@@ -288,54 +296,61 @@ function MenuTab({ items, setItems }: { items: DemoItem[]; setItems: (i: DemoIte
         </a>
       </div>
 
-      <div className="grid gap-6">
-        {Object.entries(grouped).map(([category, catItems]) => (
-          <div key={category} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="bg-gray-50/50 px-6 py-3 border-b border-gray-100 font-bold text-gray-700">{category}</div>
-            <div className="divide-y divide-gray-100">
-              {catItems.map(item => (
-                <div key={item.id} className={`p-5 flex items-start gap-4 transition-colors group ${item.isAvailable ? "hover:bg-gray-50/50" : "bg-gray-50/80 opacity-60"}`}>
-                  {item.imageUrl ? (
-                    <img src={item.imageUrl} alt={item.name} className={`w-20 h-20 object-cover rounded-lg shadow-sm shrink-0 ${!item.isAvailable ? "grayscale" : ""}`} />
-                  ) : (
-                    <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center shrink-0"><ImageIcon className="w-6 h-6 text-gray-300" /></div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start gap-2">
-                      <div className="min-w-0">
-                        <h3 className={`font-bold text-gray-900 ${!item.isAvailable ? "line-through text-gray-500" : ""}`}>{item.name}</h3>
-                        <p className="text-sm text-gray-600 mt-0.5 line-clamp-1">{item.description}</p>
+      {items.length === 0 ? (
+        <div className="text-center py-12 text-gray-500">No items in this menu yet.</div>
+      ) : (
+        <div className="grid gap-6">
+          {Object.entries(grouped).map(([category, catItems]) => (
+            <div key={category} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="bg-gray-50/50 px-6 py-3 border-b border-gray-100 font-bold text-gray-700">{category}</div>
+              <div className="divide-y divide-gray-100">
+                {catItems.map((item: any) => {
+                  const isAvailable = item.isAvailable !== false;
+                  return (
+                    <div key={item.id} className={`p-5 flex items-start gap-4 transition-colors group ${isAvailable ? "hover:bg-gray-50/50" : "bg-gray-50/80 opacity-60"}`}>
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.name} className={`w-20 h-20 object-cover rounded-lg shadow-sm shrink-0 ${!isAvailable ? "grayscale" : ""}`} />
+                      ) : (
+                        <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center shrink-0"><ImageIcon className="w-6 h-6 text-gray-300" /></div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="min-w-0">
+                            <h3 className={`font-bold text-gray-900 ${!isAvailable ? "line-through text-gray-500" : ""}`}>{item.name}</h3>
+                            <p className="text-sm text-gray-600 mt-0.5 line-clamp-1">{item.description}</p>
+                          </div>
+                          <span className="font-bold text-primary whitespace-nowrap text-sm">AED {item.price?.replace(/[^0-9.]/g, "")}</span>
+                        </div>
+                        <div className="flex gap-1.5 mt-2 flex-wrap">
+                          {item.isBestseller && <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-[10px] font-bold">🔥 Bestseller</span>}
+                          {item.isChefsPick && <span className="px-2 py-0.5 bg-violet-100 text-violet-700 rounded-full text-[10px] font-bold">👨‍🍳 Chef's Pick</span>}
+                          {item.isTodaysSpecial && <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold">⭐ Today's Special</span>}
+                          {!isAvailable && <span className="px-2 py-0.5 bg-red-100 text-red-600 rounded-full text-[10px] font-bold">Hidden</span>}
+                        </div>
+                        <div className="flex items-center gap-3 mt-3 pt-2 border-t border-gray-100">
+                          <label className="flex items-center gap-2 text-xs cursor-pointer">
+                            <Switch checked={isAvailable} onCheckedChange={() => toggleAvail(item)} />
+                            <span className={isAvailable ? "text-green-600 font-semibold" : "text-gray-400"}>
+                              {isAvailable ? <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> Live</span> : <span className="flex items-center gap-1"><EyeOff className="w-3 h-3" /> Hidden</span>}
+                            </span>
+                          </label>
+                          <div className="flex-1" />
+                          <Button variant="ghost" size="sm" className="gap-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 h-8 px-2" onClick={() => openEdit(item)}>
+                            <Pencil className="w-3.5 h-3.5" /> Edit
+                          </Button>
+                          <Button variant="ghost" size="sm" className="gap-1 text-gray-400 hover:text-red-600 hover:bg-red-50 h-8 px-2" onClick={() => handleDelete(item)}>
+                            <Trash2 className="w-3.5 h-3.5" /> Delete
+                          </Button>
+                        </div>
                       </div>
-                      <span className="font-bold text-primary whitespace-nowrap text-sm">AED {item.price}</span>
                     </div>
-                    <div className="flex gap-1.5 mt-2 flex-wrap">
-                      {item.isBestseller && <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-[10px] font-bold">🔥 Bestseller</span>}
-                      {item.isChefsPick && <span className="px-2 py-0.5 bg-violet-100 text-violet-700 rounded-full text-[10px] font-bold">👨‍🍳 Chef's Pick</span>}
-                      {item.isTodaysSpecial && <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold">⭐ Today's Special</span>}
-                      {!item.isAvailable && <span className="px-2 py-0.5 bg-red-100 text-red-600 rounded-full text-[10px] font-bold">Hidden</span>}
-                    </div>
-                    <div className="flex items-center gap-3 mt-3 pt-2 border-t border-gray-100">
-                      <label className="flex items-center gap-2 text-xs cursor-pointer">
-                        <Switch checked={item.isAvailable} onCheckedChange={() => toggleAvail(item.id)} />
-                        <span className={item.isAvailable ? "text-green-600 font-semibold" : "text-gray-400"}>
-                          {item.isAvailable ? <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> Live</span> : <span className="flex items-center gap-1"><EyeOff className="w-3 h-3" /> Hidden</span>}
-                        </span>
-                      </label>
-                      <div className="flex-1" />
-                      <Button variant="ghost" size="sm" className="gap-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 h-8 px-2" onClick={() => openEdit(item)}>
-                        <Pencil className="w-3.5 h-3.5" /> Edit
-                      </Button>
-                      <Button variant="ghost" size="sm" className="gap-1 text-gray-400 hover:text-red-600 hover:bg-red-50 h-8 px-2" onClick={() => { if (confirm(`Delete "${item.name}"?`)) deleteItem(item.id); }}>
-                        <Trash2 className="w-3.5 h-3.5" /> Delete
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
@@ -361,7 +376,9 @@ function MenuTab({ items, setItems }: { items: DemoItem[]; setItems: (i: DemoIte
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
-            <Button onClick={saveEdit}>Save Changes</Button>
+            <Button onClick={saveEdit} disabled={updateItem.isPending}>
+              {updateItem.isPending ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Saving...</> : "Save Changes"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -483,7 +500,60 @@ function QRTab() {
 // ─── Main Demo Page ───
 export default function DemoPage() {
   const [activeTab, setActiveTab] = useState("overview");
-  const [items, setItems] = useState<DemoItem[]>(initialItems);
+  const [demoReady, setDemoReady] = useState(false);
+
+  // Silently auto-login as demo admin so edits persist to the database
+  useEffect(() => {
+    async function ensureDemoAuth() {
+      try {
+        // Check if already logged in
+        const meRes = await fetch("/api/user");
+        if (meRes.ok) {
+          const user = await meRes.json();
+          if (user) { setDemoReady(true); return; }
+        }
+        // Not logged in — silently login as demo admin
+        await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: "admin", password: "password" }),
+        });
+      } catch (err) {
+        // Ignore — demo will still show data, just edits won't work
+      }
+      setDemoReady(true);
+    }
+    ensureDemoAuth();
+  }, []);
+
+  // Fetch real data from the database instead of using hardcoded items
+  const { data: restaurant, isLoading: restLoading } = useRestaurantBySlug("demo-bistro");
+  const { data: menus, isLoading: menuLoading } = useMenus(restaurant?.id || 0);
+
+  const isLoading = !demoReady || restLoading || menuLoading;
+  const activeMenu = menus?.[0];
+  const items = activeMenu?.items || [];
+
+  if (isLoading) {
+    return (
+      <DemoLayout activeTab={activeTab} setActiveTab={setActiveTab}>
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </DemoLayout>
+    );
+  }
+
+  if (!restaurant || !activeMenu) {
+    return (
+      <DemoLayout activeTab={activeTab} setActiveTab={setActiveTab}>
+        <div className="text-center py-20">
+          <h2 className="text-xl font-bold text-gray-600">Demo restaurant not found</h2>
+          <p className="text-gray-400 mt-2">The demo data may not have been seeded yet. Try refreshing.</p>
+        </div>
+      </DemoLayout>
+    );
+  }
 
   return (
     <DemoLayout activeTab={activeTab} setActiveTab={setActiveTab}>
@@ -496,7 +566,7 @@ export default function DemoPage() {
           transition={{ duration: 0.2 }}
         >
           {activeTab === "overview" && <OverviewTab items={items} setActiveTab={setActiveTab} />}
-          {activeTab === "menus" && <MenuTab items={items} setItems={setItems} />}
+          {activeTab === "menus" && <MenuTab items={items} menuId={activeMenu.id} />}
           {activeTab === "qr" && <QRTab />}
         </motion.div>
       </AnimatePresence>

@@ -102,7 +102,7 @@ export default function Onboarding() {
                 <FormItem>
                   <FormLabel>Cuisine Type</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. Italian, Sushi, Indian" {...field} className="h-12 rounded-xl" />
+                    <Input placeholder="e.g. Italian, Sushi, Indian" {...field} value={field.value ?? ""} className="h-12 rounded-xl" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -116,7 +116,7 @@ export default function Onboarding() {
                 <FormItem>
                   <FormLabel>Short Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Authentic Italian pasta made fresh daily..." {...field} className="min-h-[100px] rounded-xl" />
+                    <Textarea placeholder="Authentic Italian pasta made fresh daily..." {...field} value={field.value ?? ""} className="min-h-[100px] rounded-xl" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -131,7 +131,7 @@ export default function Onboarding() {
                   <FormItem>
                     <FormLabel>Address</FormLabel>
                     <FormControl>
-                      <Input placeholder="123 Main St" {...field} className="h-12 rounded-xl" />
+                      <Input placeholder="123 Main St" {...field} value={field.value ?? ""} className="h-12 rounded-xl" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -144,7 +144,7 @@ export default function Onboarding() {
                   <FormItem>
                     <FormLabel>Phone Number</FormLabel>
                     <FormControl>
-                      <Input placeholder="+971 50 123 4567" {...field} className="h-12 rounded-xl" />
+                      <Input placeholder="+971 50 123 4567" {...field} value={field.value ?? ""} className="h-12 rounded-xl" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -160,7 +160,7 @@ export default function Onboarding() {
                   <FormItem>
                     <FormLabel>WhatsApp Number (for orders)</FormLabel>
                     <FormControl>
-                      <Input placeholder="+971501234567 (no spaces)" {...field} className="h-12 rounded-xl" />
+                      <Input placeholder="+971501234567 (no spaces)" {...field} value={field.value ?? ""} className="h-12 rounded-xl" />
                     </FormControl>
                     <p className="text-xs text-gray-500 mt-1">Customers will send orders to this WhatsApp number.</p>
                     <FormMessage />
@@ -180,6 +180,7 @@ export default function Onboarding() {
                         max={200}
                         placeholder="10"
                         {...field}
+                        value={field.value ?? 10}
                         onChange={e => field.onChange(parseInt(e.target.value) || 10)}
                         className="h-12 rounded-xl"
                       />

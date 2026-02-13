@@ -15,7 +15,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
 
   // Restaurant
-  createRestaurant(restaurant: InsertRestaurant): Promise<Restaurant>;
+  createRestaurant(restaurant: InsertRestaurant & { userId: number }): Promise<Restaurant>;
   getRestaurant(id: number): Promise<Restaurant | undefined>;
   getRestaurantBySlug(slug: string): Promise<Restaurant | undefined>;
   getRestaurantsByUser(userId: number): Promise<Restaurant[]>;
@@ -48,7 +48,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createRestaurant(restaurant: InsertRestaurant): Promise<Restaurant> {
+  async createRestaurant(restaurant: InsertRestaurant & { userId: number }): Promise<Restaurant> {
     const [newRestaurant] = await db.insert(restaurants).values(restaurant).returning();
     return newRestaurant;
   }

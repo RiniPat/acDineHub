@@ -16,7 +16,12 @@ let openaiClient: OpenAI | null = null;
 function getOpenAI(): OpenAI {
   if (!openaiClient) {
     const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("No OpenAI API key configured. Set OPENAI_API_KEY in Railway variables.");
+    if (!apiKey) {
+      console.error("Available env vars with 'API' or 'KEY':", 
+        Object.keys(process.env).filter(k => k.includes('API') || k.includes('KEY') || k.includes('OPENAI')));
+      throw new Error("No OpenAI API key found. Set OPENAI_API_KEY in Railway variables.");
+    }
+    console.log("OpenAI client initialized with key starting with:", apiKey.substring(0, 7) + "...");
     openaiClient = new OpenAI({
       apiKey,
       ...(process.env.AI_INTEGRATIONS_OPENAI_BASE_URL ? { baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL } : {}),
@@ -228,9 +233,19 @@ export async function registerRoutes(
       // We could save it here, but for now we return it so the user can review/edit/save
       res.json(generatedData);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error("AI Generation Error:", err);
-      res.status(500).json({ message: "Failed to generate menu" });
+      const message = err?.message || "Failed to generate menu";
+      // Surface OpenAI-specific errors
+      if (err?.status === 401) {
+        res.status(500).json({ message: "Invalid OpenAI API key. Please check your OPENAI_API_KEY in Railway variables." });
+      } else if (err?.status === 429) {
+        res.status(500).json({ message: "OpenAI rate limit or quota exceeded. Check your billing at platform.openai.com." });
+      } else if (err?.code === 'insufficient_quota') {
+        res.status(500).json({ message: "OpenAI quota exceeded. Please add credits at platform.openai.com/billing." });
+      } else {
+        res.status(500).json({ message: `AI generation failed: ${message}` });
+      }
     }
   });
 
